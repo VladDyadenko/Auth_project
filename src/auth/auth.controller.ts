@@ -1,10 +1,10 @@
-import { BadRequestException, Body, Controller, Get, Post, UnauthorizedException, Res, HttpStatus } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, UnauthorizedException, Res, HttpStatus, Req } from '@nestjs/common';
 import { Response } from 'express';
 import { LoginDto, RegisterDto } from './dto';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import { Tokens } from './intarfaces';
-import { Cookies } from '@common/decorators';
+import { Cookies, UserAgent } from '@common/decorators';
 const REFRESH_TOKEN_COOKIE_NAME = 'refreshToken';
 @Controller('auth')
 export class AuthController {
@@ -22,7 +22,9 @@ export class AuthController {
     }
     
     @Post('login')
-    async login(@Body() dto: LoginDto, @Res() res: Response) {
+    async login(@Body() dto: LoginDto, @Res() res: Response, @UserAgent() agent:string) {
+  
+        
         const tokens = await this.authService.login(dto);
         if (!tokens) {
             throw new BadRequestException(`Помилка при вході з даними ${JSON.stringify(dto)}`);
@@ -51,8 +53,13 @@ export class AuthController {
     @Get('refresh_tokens')
     async refreshTokens(@Cookies(REFRESH_TOKEN_COOKIE_NAME) refreshToken: string, @Res() res: Response) {
         if (!refreshToken) {
-            throw new UnauthorizedException('Токен не знайдено');
+            throw new UnauthorizedException;
         }
         const tokens = await this.authService.refreshTokens(refreshToken);
+        if (!tokens) {
+            throw new UnauthorizedException;
+        }
+        this.setRefreshTokenCookie(tokens, res);
+
     }
 }

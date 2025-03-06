@@ -18,7 +18,7 @@ export class UserService {
                 email: dto.email,
                 name: dto.name,
                 password: hashPassword,
-                roles: [dto.roles],     
+                role: dto.role,     
     });
     return user;
   }

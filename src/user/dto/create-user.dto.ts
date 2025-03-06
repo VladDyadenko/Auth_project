@@ -8,8 +8,7 @@ export class CreateUserDto{
              @IsString()
              @MinLength(6)
     readonly password: string;
-              @IsOptional()
-              @IsString({ each: true })
-    readonly roles?: string[];
+             @IsString()
+    readonly role?: string;
  
 }

@@ -50,7 +50,11 @@ export class AuthService {
     async refreshTokens(refreshToken: string) {
     const tokenDoc = await this.tokenModule.findOne({ token: refreshToken });
     
-    if (!tokenDoc || new Date() > tokenDoc.exp) {
+    if (!tokenDoc ) {
+        throw new UnauthorizedException('Invalid refresh token');
+    }
+        if (Date.now() > tokenDoc.exp.getTime()) {
+        await this.tokenModule.deleteOne({ token: refreshToken});
         throw new UnauthorizedException;
     }
     
@@ -60,12 +64,12 @@ export class AuthService {
     }
     
     // Видалити старий токен
-    await this.tokenModule.findOneAndDelete({ userId: user.id });
+    await this.tokenModule.deleteMany({ userId: user._id });
     
     return await this.generateToken(user)  
     }
     
-    
+
     async logout(refreshToken: string) {
         await this.tokenModule.deleteOne({ token: refreshToken });
     return { success: true };
@@ -82,8 +86,8 @@ export class AuthService {
     }
     // Генерація токенів
     private async generateToken(user: IUser) {
-    const accessToken = 'Bearer ' + this.jwtServise.sign({ id: user.id, email: user.email, roles: user.roles });
-    const refreshToken = await this.refreshToken(user.id);
+    const accessToken = 'Bearer ' + this.jwtServise.sign({ id: user._id, email: user.email, role: user.role });
+    const refreshToken = await this.refreshToken(user._id);
     return { accessToken, refreshToken };
 }
 }
