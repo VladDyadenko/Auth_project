@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { IsEmail, IsString } from 'class-validator';
-import { Document } from 'mongoose';
-import { Tokens } from '../auth/intarfaces';
-import mongoose from 'mongoose';
+import { Document, Schema as MongooseSchema, Types } from 'mongoose';
 
 export type UserDocument = User & Document;
+export type TokenDocument = Token & Document;
 
 // user.schema.ts
 @Schema({ versionKey: false })
@@ -23,24 +21,22 @@ export class User {
 
   @Prop()
   token: string;
+  
 }
 
 @Schema({ versionKey: false })
 export class Token {
-  @Prop()
+  @Prop({ required: true })
   token: string;
 
-  @Prop()
+  @Prop({ required: true })
   exp: Date;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'users' })
-  user: User;
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
+  userId: Types.ObjectId;
 
-  @Prop()
-  userId: string
-
-  @Prop()
+  @Prop({ required: true })
   userAgent: string;
 } 
-export const UserSchema = SchemaFactory.createForClass(User);
 export const TokenSchema = SchemaFactory.createForClass(Token);
+export const UserSchema = SchemaFactory.createForClass(User);

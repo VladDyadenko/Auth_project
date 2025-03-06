@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UserModule } from './user.module';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.models';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { IUser } from './interface/user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { hashSync, genSaltSync } from 'bcrypt';
@@ -57,9 +57,11 @@ export class UserService {
 //     return user;
 //   }
 
-  async getUserById(id: string) {
-    const user = await this.userModule.findById({ _id: id });
-    return user;
+  async getUserById(id: string | Types.ObjectId): Promise<IUser | null> {
+    const userId = typeof id === 'string' 
+        ? Types.ObjectId.createFromHexString(id)
+        : id;
+    return this.userModule.findById(userId);
   }
 
   async getUserByEmail(email: string) {
