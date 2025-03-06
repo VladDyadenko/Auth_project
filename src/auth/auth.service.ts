@@ -4,9 +4,9 @@ import { UserService } from 'src/user/user.service';
 import { LoginDto, RegisterDto } from './dto';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Token } from 'src/user/user.models';
+import { Token} from 'src/user/user.models';
 import { Model } from 'mongoose';
-import { IToken } from 'src/user/interface/user.interface';
+import { IToken, IUser } from 'src/user/interface/user.interface';
 import { add } from 'date-fns';
 import { v4 } from 'uuid';
 
@@ -39,28 +39,19 @@ export class AuthService {
             throw new UnauthorizedException('Invalid email or password');
             
         }
+        await this.tokenModule.findOneAndDelete({ userId: user.id });
 
-        const accessToken = this.jwtServise.sign({ id: user.id, email: user.email, roles: user.roles });
-        
-        const refreshToken = await this.refreshToken(user.id);
-          return { accessToken, refreshToken};
-    }
-        private async refreshToken(userId: string) {
-        const tokenValue = v4();
-        await this.tokenModule.create({
-        token: tokenValue,
-        exp: add(new Date(), { months: 1 }),
-        userId,
-     });
-        return tokenValue; 
+        return await this.generateToken(user) 
     }
 
+   
+  
 
-    async refresh(refreshToken: string) {
+    async refreshTokens(refreshToken: string) {
     const tokenDoc = await this.tokenModule.findOne({ token: refreshToken });
     
     if (!tokenDoc || new Date() > tokenDoc.exp) {
-        throw new UnauthorizedException('Invalid or expired refresh token');
+        throw new UnauthorizedException;
     }
     
     const user = await this.userService.getUserById(tokenDoc.userId);
@@ -69,19 +60,30 @@ export class AuthService {
     }
     
     // Видалити старий токен
-    await this.tokenModule.deleteOne({ token: refreshToken });
+    await this.tokenModule.findOneAndDelete({ userId: user.id });
     
-    // Створити нові токени
-    const accessToken = this.jwtServise.sign({ id: user.id, email: user.email, roles: user.roles });
-    const newRefreshToken = await this.refreshToken(user.id);
+    return await this.generateToken(user)  
+    }
     
-    return { accessToken, refreshToken: newRefreshToken };
-
-    
-}
     
     async logout(refreshToken: string) {
-    await this.tokenModule.deleteOne({ token: refreshToken });
+        await this.tokenModule.deleteOne({ token: refreshToken });
     return { success: true };
+    }
+    
+
+    private async refreshToken(userId: string) {
+        const refreshToken = await this.tokenModule.create({
+        token: v4(),
+        exp: add(new Date(), { months: 1 }),
+        userId,
+         });
+            return refreshToken
+    }
+    // Генерація токенів
+    private async generateToken(user: IUser) {
+    const accessToken = 'Bearer ' + this.jwtServise.sign({ id: user.id, email: user.email, roles: user.roles });
+    const refreshToken = await this.refreshToken(user.id);
+    return { accessToken, refreshToken };
 }
 }
